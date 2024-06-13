@@ -12,8 +12,7 @@ exports.createEvent = async (req, res) => {
       throw new Error("request body is missing");
     }
     const { eventType, notes, eventStart, eventEnd, _id } = req.body;
-    if (!eventType || !eventStart || !eventEnd
-    ) {
+    if (!eventType || !eventStart || !eventEnd) {
       statusCode = 400;
       throw new Error("Missing required fields");
     }
@@ -111,7 +110,6 @@ exports.getEvent = async (req, res) => {
   }
 };
 
-
 exports.editEvent = async (req, res) => {
   let statusCode = 200;
   try {
@@ -143,19 +141,19 @@ exports.editEvent = async (req, res) => {
       const newDay =
         (await Day.findOne({ dayStart: newDayStart })) ||
         new Day({ dayStart: newDayStart, events: [] });
-    
-    // remove id from original days events array
-    originalDay.events = originalDay.events.filter(
-      (eventId) => eventId.toString() !== _id
-    );
-    await originalDay.save();
-    //add event id to new days events array
-    newDay.events.push(_id);
-    await newDay.save();
 
-    //update events day id
-    event.dayId = newDay._id;
-  }
+      // remove id from original days events array
+      originalDay.events = originalDay.events.filter(
+        (eventId) => eventId.toString() !== _id
+      );
+      await originalDay.save();
+      //add event id to new days events array
+      newDay.events.push(_id);
+      await newDay.save();
+
+      //update events day id
+      event.dayId = newDay._id;
+    }
     //update event details
     event.eventType = eventType;
     event.notes = notes;
@@ -240,70 +238,57 @@ exports.deleteEvent = async (req, res) => {
 
 exports.getStatistics = async (req, res) => {
   try {
-    const { eventType, eventStart, eventEnd } = req.body;
+    const { eventTypes, eventStart, eventEnd } = req.body;
 
-    if (!["sleep", "nap", "meal"].includes(eventType)) {
+    if (!Array.isArray(eventTypes) || eventTypes.length === 0) {
       return response({
         res,
         status: 400,
-        message: "Invalid event type",
+        message: "Invalid or missing event types ",
       });
     }
 
-    const events = await Event.find({
-      eventType,
+    const filter = {
       eventStart: { $gte: new Date(eventStart), $lte: new Date(eventEnd) },
+    };
+
+    const events = await Event.find({
+      eventType: { $in: eventTypes },
+      ...filter,
     });
 
-    let totalEvents = 0;
+    let totalEvents = events.length;
     let totalSleepTime = 0;
     let totalSleepEvents = 0;
     let totalNapTime = 0;
     let totalNapEvents = 0;
     let totalMealEvents = 0;
-    let averageSleepTime = 0;
-    let averageNapTime = 0;
 
-    console.log({
-      eventType: eventType,
-      eventStart: { $gte: new Date(eventStart) },
-      eventEnd: { $lte: new Date(eventEnd) },
-    });
+    // console.log({
+    //   eventTypes: eventType,
+    //   eventStart: { $gte: new Date(eventStart) },
+    //   eventEnd: { $lte: new Date(eventEnd) },
+    // });
 
     events.forEach((event) => {
-      totalEvents++;
-      if (
-        eventType !== "sleep" &&
-        eventType !== "nap" &&
-        eventType !== "meal"
-      ) {
-        return response({
-          res,
-          status: 400,
-          message: "missing required fields",
-        });
-      }
-      if (eventType === "sleep") {
-        const sleepDuration =
-          (event.eventEnd - event.eventStart) / (1000 * 60 * 60);
-        totalSleepTime += sleepDuration;
+      const eventDuration =
+        (event.eventEnd - event.eventStart) / (1000 * 60 * 60);
+
+      if (event.eventType === "sleep") {
+        totalSleepTime += eventDuration;
         totalSleepEvents++;
-      } else if (eventType === "nap") {
-        const napDuration =
-          (event.eventEnd - event.eventStart) / (1000 * 60 * 60);
-        totalNapTime += napDuration;
+      } else if (event.eventType === "nap") {
+        totalNapTime += eventDuration;
         totalNapEvents++;
-      } else if (eventType === "meal") {
+      } else if (event.eventType === "meal") {
         totalMealEvents++;
       }
     });
 
-    if (totalSleepEvents > 0) {
-      averageSleepTime = totalSleepTime / totalSleepEvents;
-    }
-    if (totalNapEvents > 0) {
-      averageNapTime = totalNapTime / totalNapEvents;
-    }
+    const averageSleepTime =
+      totalSleepEvents > 0 ? totalSleepTime / totalSleepEvents : 0;
+    const averageNapTime =
+      totalNapEvents > 0 ? totalNapTime / totalNapEvents : 0;
 
     const data = {
       totalEvents,
