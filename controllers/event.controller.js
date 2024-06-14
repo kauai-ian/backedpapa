@@ -263,6 +263,8 @@ exports.getStatistics = async (req, res) => {
     let totalNapTime = 0;
     let totalNapEvents = 0;
     let totalMealEvents = 0;
+    let totalDiaperChanges = 0;
+   
 
     // console.log({
     //   eventTypes: eventType,
@@ -271,9 +273,8 @@ exports.getStatistics = async (req, res) => {
     // });
 
     events.forEach((event) => {
-      const eventDuration =
-        (event.eventEnd - event.eventStart) / (1000 * 60 * 60);
-
+      const eventDuration = (event.eventEnd - event.eventStart) / (1000 * 60 * 60);
+      
       if (event.eventType === "sleep") {
         totalSleepTime += eventDuration;
         totalSleepEvents++;
@@ -283,12 +284,13 @@ exports.getStatistics = async (req, res) => {
       } else if (event.eventType === "meal") {
         totalMealEvents++;
       }
+      else if (event.eventType === "diaper") {
+        totalMealEvents++;
+      }
     });
 
-    const averageSleepTime =
-      totalSleepEvents > 0 ? totalSleepTime / totalSleepEvents : 0;
-    const averageNapTime =
-      totalNapEvents > 0 ? totalNapTime / totalNapEvents : 0;
+    const averageSleepTime = totalSleepEvents > 0 ? totalSleepTime / totalSleepEvents : 0;
+    const averageNapTime = totalNapEvents > 0 ? totalNapTime / totalNapEvents : 0;
 
     const data = {
       totalEvents,
@@ -299,6 +301,7 @@ exports.getStatistics = async (req, res) => {
       totalMealEvents,
       averageSleepTime,
       averageNapTime,
+      totalDiaperChanges
     };
 
     return response({
@@ -330,10 +333,11 @@ exports.updateStatistics = async (dayId) => {
     let totalNapTime = 0;
     let totalNapEvents = 0;
     let totalMealEvents = 0;
+    let totalDiaperChanges = 0;
 
     day.events.forEach((event) => {
       const { eventType, eventStart, eventEnd } = event;
-      if (!["sleep", "nap", "meal"].includes(eventType)) {
+      if (!["sleep", "nap", "meal", "diaper"].includes(eventType)) {
         return response({
           res,
           status: 400,
@@ -354,6 +358,10 @@ exports.updateStatistics = async (dayId) => {
       } else if (eventType === "meal") {
         totalMealEvents++;
       }
+      else if (eventType === "diaper") {
+        totalDiaperChanges++;
+      }
+      
     });
 
     day.totalSleepTime = totalSleepTime;
@@ -361,6 +369,7 @@ exports.updateStatistics = async (dayId) => {
     day.totalNapTime = totalNapTime;
     day.totalNapEvents = totalNapEvents;
     day.totalMealEvents = totalMealEvents;
+    day.totalDiaperChanges = totalDiaperChanges
 
     await day.save();
     console.log("statistics updated successfully");
