@@ -39,6 +39,7 @@ exports.createEvent = async (req, res) => {
     await day.save();
 
     await exports.updateStatistics(day._id);
+
     const updatedDay = await Day.findById(day._id);
 
     return response({
@@ -265,6 +266,8 @@ exports.getStatistics = async (req, res) => {
     let totalNapEvents = 0;
     let totalMealEvents = 0;
     let totalDiaperChanges = 0;
+    let sleepEvents = [];
+    let napEvents = [];
 
     // console.log({
     //   eventTypes: eventType,
@@ -279,9 +282,17 @@ exports.getStatistics = async (req, res) => {
       if (event.eventType === "sleep") {
         totalSleepTime += eventDuration;
         totalSleepEvents++;
+        sleepEvents.push({
+          eventStart: event.eventStart,
+          eventEnd: event.eventEnd,
+        });
       } else if (event.eventType === "nap") {
         totalNapTime += eventDuration;
         totalNapEvents++;
+        napEvents.push({
+          eventStart: event.eventStart,
+          eventEnd: event.eventEnd,
+        });
       } else if (event.eventType === "meal") {
         totalMealEvents++;
       } else if (event.eventType === "diaper") {
@@ -304,6 +315,8 @@ exports.getStatistics = async (req, res) => {
       averageSleepTime,
       averageNapTime,
       totalDiaperChanges,
+      sleepEvents,
+      napEvents,
     };
 
     return response({
