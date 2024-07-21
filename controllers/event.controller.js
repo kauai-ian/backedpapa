@@ -118,7 +118,7 @@ exports.editEvent = async (req, res) => {
     const { _id } = req.params;
     const { eventType, notes, eventStart, eventEnd } = req.body;
     console.log(req.body);
-    if (!_id || !eventType || !notes || !eventStart || !eventEnd) {
+    if (!_id || !eventType || !eventStart || !eventEnd) {
       return response({
         res,
         status: 400,
