@@ -12,6 +12,7 @@ exports.createEvent = async (req, res) => {
       throw new Error("request body is missing");
     }
     const { eventType, notes, eventStart, eventEnd, _id } = req.body;
+    const userId = req.user.sub;
     if (!eventType || !eventStart || !eventEnd) {
       statusCode = 400;
       throw new Error("Missing required fields");
@@ -31,6 +32,7 @@ exports.createEvent = async (req, res) => {
       eventStart,
       eventEnd,
       dayId: day._id,
+      user: userId,
     });
     await newEvent.save();
     console.log("new event created:", newEvent);
@@ -40,7 +42,8 @@ exports.createEvent = async (req, res) => {
 
     await exports.updateStatistics(day._id);
 
-    const updatedDay = await Day.findById(day._id);
+const updatedDay = await Day.findById(day._id);
+
 
     return response({
       res,
@@ -267,7 +270,8 @@ exports.getStatistics = async (req, res) => {
     let totalMealEvents = 0;
     let totalDiaperChanges = 0;
     let sleepEvents = [];
-    let napEvents = [];
+    let napEvents = []
+   
 
     // console.log({
     //   eventTypes: eventType,
@@ -276,34 +280,32 @@ exports.getStatistics = async (req, res) => {
     // });
 
     events.forEach((event) => {
-      const eventDuration =
-        (event.eventEnd - event.eventStart) / (1000 * 60 * 60);
-
+      const eventDuration = (event.eventEnd - event.eventStart) / (1000 * 60 * 60);
+      
       if (event.eventType === "sleep") {
         totalSleepTime += eventDuration;
         totalSleepEvents++;
         sleepEvents.push({
           eventStart: event.eventStart,
-          eventEnd: event.eventEnd,
-        });
+          eventEnd: event.eventEnd
+        })
       } else if (event.eventType === "nap") {
         totalNapTime += eventDuration;
         totalNapEvents++;
         napEvents.push({
           eventStart: event.eventStart,
-          eventEnd: event.eventEnd,
-        });
+          eventEnd: event.eventEnd
+        })
       } else if (event.eventType === "meal") {
         totalMealEvents++;
-      } else if (event.eventType === "diaper") {
+      }
+      else if (event.eventType === "diaper") {
         totalDiaperChanges++;
       }
     });
 
-    const averageSleepTime =
-      totalSleepEvents > 0 ? totalSleepTime / totalSleepEvents : 0;
-    const averageNapTime =
-      totalNapEvents > 0 ? totalNapTime / totalNapEvents : 0;
+    const averageSleepTime = totalSleepEvents > 0 ? totalSleepTime / totalSleepEvents : 0;
+    const averageNapTime = totalNapEvents > 0 ? totalNapTime / totalNapEvents : 0;
 
     const data = {
       totalEvents,
@@ -316,7 +318,7 @@ exports.getStatistics = async (req, res) => {
       averageNapTime,
       totalDiaperChanges,
       sleepEvents,
-      napEvents,
+      napEvents
     };
 
     return response({
@@ -372,9 +374,11 @@ exports.updateStatistics = async (dayId) => {
         totalNapEvents++;
       } else if (eventType === "meal") {
         totalMealEvents++;
-      } else if (eventType === "diaper") {
+      }
+      else if (eventType === "diaper") {
         totalDiaperChanges++;
       }
+      
     });
 
     day.totalSleepTime = totalSleepTime;
@@ -382,7 +386,7 @@ exports.updateStatistics = async (dayId) => {
     day.totalNapTime = totalNapTime;
     day.totalNapEvents = totalNapEvents;
     day.totalMealEvents = totalMealEvents;
-    day.totalDiaperChanges = totalDiaperChanges;
+    day.totalDiaperChanges = totalDiaperChanges
 
     await day.save();
     console.log("statistics updated successfully");

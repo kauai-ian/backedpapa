@@ -6,9 +6,25 @@ const logger = require("morgan");
 const mongoose = require("mongoose");
 const http = require("http");
 const cors = require("cors");
-const routes = require("../routes/event.routes");
+const eventRouter = require("../routes/event.routes");
+const userRouter = require("../routes/user.routes");
+// const { auth } = require("express-oauth2-jwt-bearer");
 
+const app = express();
 const port = process.env.PORT || 3000;
+
+//authorization middleware when used, the access token must exist and be verified against the Auth0 JWKS
+// app.use(
+//   auth({
+//   authRequired: false,
+//   auth0Logout: true,
+//   secret: process.env.AUTH0_SECRET,
+//   baseURL: "http://localhost:3000",
+//   clientID: process.env.AUTH0_CLIENTID,
+//   issuerBaseURL: process.env.AUTH0_BASEURL,
+// })
+// );
+// console.log(configAuth);
 
 // connect to db
 mongoose
@@ -21,7 +37,6 @@ mongoose
     console.error("error connecting with mongoDB", error);
   });
 
-const app = express();
 
 app.use(logger("dev"));
 app.use(express.json());
@@ -32,7 +47,8 @@ app.set("port", port);
 
 const server = http.createServer(app);
 
-app.use("/api", routes);
+app.use("/api", eventRouter);
+app.use("/api/user", userRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -47,8 +63,8 @@ app.use(function (err, req, res, next) {
   res.locals.error = req.app.get("env") === "development" ? err : {};
 
   // render the error page
-  res.status(err.status || 500).json({error: err});
-
+  res.status(err.status || 500);
+  res.render("error");
 });
 
 app.get("/", (req, res) => res.send("Express on Vercel"));
